@@ -24,9 +24,11 @@ Biện pháp kỹ thuật
 - Khóa tài khoản 20 giây sau 5 lần sai
 - Thêm xác thực MFA bằng OTP demo
 - Hủy session hoàn toàn khi logout
+  
 Biện pháp quy trình
 - Ghi log đăng nhập thất bại
 - Kiểm thử bảo mật định kỳ
+ 
 Biện pháp nâng cao nhận thức
 - Không chia sẻ tài khoản
 - Không sử dụng cùng một mật khẩu cho nhiều hệ thống
