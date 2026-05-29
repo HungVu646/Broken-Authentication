@@ -1,10 +1,12 @@
 ### 1. MÔ TẢ ĐỀ TÀI
 - Tên đề tài: Phân tích và khắc phục lỗi Broken Authentication
 - Hệ thống demo: Assignment Manager hệ thống quản lý bài tập sinh viên
+
 Mục tiêu:
 - Hiểu các lỗi xác thực phổ biến
 - Phân tích nguyên nhân và hậu quả
 - Đề xuất và triển khai giải pháp khắc phục
+
 Các lỗi được demo:
 - Không giới hạn số lần đăng nhập sai
 - Logout không hủy session
