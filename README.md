@@ -15,15 +15,16 @@ Các lỗi được demo:
 ### 2. CÔNG CỤ SỬ DỤNG
 Công cụ	Mục đích
 - HTML/CSS/JavaScript: Xây dựng giao diện và xử lý logic
-LocalStorage: Lưu trữ session trên trình duyệt
-Fetch API: Đọc dữ liệu người dùng từ file JSON
-Live Server: Chạy web server để demo
+- LocalStorage: Lưu trữ session trên trình duyệt
+- Fetch API: Đọc dữ liệu người dùng từ file JSON
+- Live Server: Chạy web server để demo
 
 ### 3. CÁCH CHẠY DEMO
 Bước 1: Đảm bảo có 3 file trong cùng thư mục:
 - BrokenAuthentication.html (bản lỗi)
 - SecureAuthentication.html (bản vá)
 - users.json (dữ liệu tài khoản)
+
 Bước 2: Chạy web server (không thể mở trực tiếp file HTML do CORS):
 - Dùng Live Server (VS Code):*
 - Chuột phải vào file HTML → Open with Live Server
