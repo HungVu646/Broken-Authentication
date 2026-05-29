@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚠️ BROKEN AUTHENTICATION - Assignment Manager (Vulnerable)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #f5e8e5 0%, #e8c5c0 100%);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+        }
+        .container {
+            max-width: 550px;
+            width: 100%;
+            background: white;
+            border-radius: 2rem;
+            box-shadow: 0 25px 45px rgba(0,0,0,0.3);
+            overflow: hidden;
+            border-top: 8px solid #c0392b;
+        }
+        .header {
+            background: #ffe8e5;
+            padding: 1.5rem;
+            text-align: center;
+            border-bottom: 2px solid #f0c0b8;
+        }
+        .header h1 {
+            margin: 0;
+            color: #b33b2c;
+            font-size: 1.8rem;
+        }
+        .badge {
+            display: inline-block;
+            background: #c0392b;
+            color: white;
+            padding: 0.3rem 1rem;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+        .vuln-list {
+            background: #fff3cd;
+            padding: 0.8rem;
+            margin: 1rem;
+            border-radius: 1rem;
+            font-size: 0.8rem;
+            color: #856404;
+        }
+        .body {
+            padding: 2rem;
+        }
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        label {
+            font-weight: 600;
+            color: #2c3e66;
+        }
+        input {
+            padding: 12px 14px;
+            border-radius: 28px;
+            border: 1px solid #ddd;
+            font-size: 1rem;
+        }
+        input:focus {
+            outline: none;
+            border-color: #c0392b;
+        }
+        button {
+            background: #c0392b;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: #a93226;
+        }
+        .logout-btn {
+            background: #7f8c8d;
+            margin-top: 1rem;
+        }
+        .status {
+            margin-top: 1rem;
+            padding: 12px;
+            border-radius: 24px;
+            font-size: 0.85rem;
+        }
+        .error-msg {
+            color: #b91c1c;
+            background: #fee2e2;
+        }
+        .success-msg {
+            color: #166534;
+            background: #dcfce7;
+        }
+        .dashboard {
+            background: #f9fafb;
+            border-radius: 1.5rem;
+            padding: 1.2rem;
+            border: 1px solid #e5e7eb;
+        }
+        .log-area {
+            background: #1e293b;
+            color: #cbd5e6;
+            font-family: monospace;
+            font-size: 0.7rem;
+            padding: 10px;
+            border-radius: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+        .warning {
+            background: #ffeb3b;
+            color: #333;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            margin-top: 1rem;
+            text-align: center;
+        }
+        hr {
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>⚠️ BROKEN AUTHENTICATION</h1>
+        <div class="badge">VULNERABLE VERSION</div>
+    </div>
+    <div class="body" id="mainContent">
+        <!-- Dynamic content -->
+    </div>
+</div>
+
+<script>
+    // User database loaded from users.json
+    let USERS_DB = [];
+
+    // Vulnerable session storage (persists forever, never expires)
+    let currentUser = null;
+
+    // Log failure attempts (just for display, NO lockout)
+    let failureLogs = [];
+
+    // Load users from users.json
+    async function loadUsers() {
+        try {
+            const response = await fetch('users.json');
+            USERS_DB = await response.json();
+            addLog(`📂 Đã tải ${USERS_DB.length} người dùng từ users.json`, false);
+        } catch (e) {
+            addLog(`❌ Không thể tải users.json: ${e.message}`, true);
+        }
+        renderUI();
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    function addLog(message, isError = false) {
+        failureLogs.unshift({
+            time: new Date().toLocaleTimeString(),
+            message: message,
+            isError: isError
+        });
+        if (failureLogs.length > 50) failureLogs.pop();
+        updateLogDisplay();
+    }
+
+    function updateLogDisplay() {
+        const logContainer = document.getElementById('logDisplay');
+        if (!logContainer) return;
+        logContainer.innerHTML = failureLogs.map(log => 
+            `<div style="color: ${log.isError ? '#f87171' : '#a5f3c3'}; border-bottom: 1px solid #334155; padding: 4px 0;">
+                [${log.time}] ${escapeHtml(log.message)}
+            </div>`
+        ).join('');
+    }
+
+    // Save session to localStorage (Broken: never invalidates)
+    function saveSession() {
+        if (currentUser) {
+            localStorage.setItem('broken_session', JSON.stringify(currentUser));
+            addLog(`💾 Session saved for ${currentUser.username} (sẽ tồn tại mãi mãi)`, false);
+        }
+    }
+
+    function loadSession() {
+        const saved = localStorage.getItem('broken_session');
+        if (saved) {
+            try {
+                currentUser = JSON.parse(saved);
+                addLog(`🔄 Tự động đăng nhập từ session cũ: ${currentUser.username} (Session không hết hạn)`, false);
+                return true;
+            } catch(e) {}
+        }
+        return false;
+    }
+
+    // Flag để biết vừa logout (tránh loadSession() tự đăng nhập lại ngay)
+    let justLoggedOut = false;
+
+    function destroySession() {
+        // BROKEN: chỉ xóa biến trong RAM, KHÔNG xóa localStorage!
+        // Session vẫn còn trong storage, sau F5/back sẽ tự động đăng nhập lại
+        const oldUser = currentUser ? currentUser.username : 'unknown';
+        currentUser = null;
+        justLoggedOut = true;
+        addLog(`🚪 Đã gọi logout cho ${oldUser} nhưng session KHÔNG bị xóa khỏi localStorage! Refresh trang sẽ tự động đăng nhập lại.`, true);
+        // CỐ TÌNH KHÔNG xóa localStorage để minh họa lỗi
+        renderUI();
+    }
+
+    function performLogin(username, password) {
+        // KHÔNG có rate limit, KHÔNG lockout
+        const user = USERS_DB.find(u => u.username === username && u.password === password);
+        
+        if (user) {
+            currentUser = {
+                username: user.username,
+                fullname: user.fullname,
+                role: user.role,
+                loginTime: new Date().toISOString()
+            };
+            saveSession();
+            justLoggedOut = false;
+            addLog(`✅ ĐĂNG NHẬP THÀNH CÔNG: ${username} (sau ${failureLogs.filter(l => l.message.includes(username) && l.isError).length} lần thất bại trước đó)`, false);
+            renderUI();
+            return true;
+        } else {
+            // Ghi nhận thất bại nhưng KHÔNG khóa tài khoản
+            addLog(`❌ Đăng nhập THẤT BẠI: ${username} - vẫn có thể thử tiếp (KHÔNG GIỚI HẠN)`, true);
+            return false;
+        }
+    }
+
+    function renderUI() {
+        const container = document.getElementById('mainContent');
+        if (!container) return;
+
+        // Kiểm tra session cũ khi load - nhưng KHÔNG load lại ngay sau khi logout
+        if (!currentUser && !justLoggedOut) {
+            loadSession();
+        }
+
+        if (currentUser) {
+            // Dashboard - logged in
+            container.innerHTML = `
+                <div class="dashboard">
+                    <h3>📚 Chào mừng, ${escapeHtml(currentUser.fullname)}</h3>
+                    <p><strong>Username:</strong> ${escapeHtml(currentUser.username)}</p>
+                    <p><strong>Vai trò:</strong> ${escapeHtml(currentUser.role)}</p>
+                    <hr>
+                    <h4>📝 Bài tập gần đây</h4>
+                    <ul>
+                        <li>Bài 1: Bảo mật cơ bản - Nộp 20/10</li>
+                        <li>Bài 2: SQL Injection - Đang làm</li>
+                        <li>Bài 3: XSS - Chưa bắt đầu</li>
+                    </ul>
+                    <div class="warning">
+                        ⚠️ <strong>CẢNH BÁO BẢO MẬT:</strong><br>
+                        Session này sẽ không bao giờ hết hạn!<br>
+                        Logout không hủy session - refresh trang sẽ tự động đăng nhập lại.
+                    </div>
+                    <button id="logoutBtn" class="logout-btn">🚪 Đăng xuất (Broken - không hủy session)</button>
+                    <div class="log-area" id="logDisplay"></div>
+                </div>
+            `;
+            document.getElementById('logoutBtn')?.addEventListener('click', () => {
+                destroySession();
+            });
+            updateLogDisplay();
+        } else {
+            // Login form
+            container.innerHTML = `
+                <div class="login-form">
+                    <div class="input-group">
+                        <label>👤 Tên đăng nhập</label>
+                        <input type="text" id="username" placeholder="student / teacher / admin" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label>🔑 Mật khẩu</label>
+                        <input type="password" id="password" placeholder="Nhập mật khẩu">
+                    </div>
+                    <button id="loginBtn">🔓 Đăng nhập (Không giới hạn số lần)</button>
+                    <div id="statusMsg" class="status"></div>
+                    
+                    <div class="warning">
+                        <strong>📋 Danh sách mật khẩu yếu (dễ brute-force):</strong><br>
+                        student: 123123 | teacher: 123456 | admin: admin123@<br>
+                        <em>Có thể thử sai KHÔNG GIỚI HẠN lần!</em>
+                    </div>
+                    <div class="log-area" id="logDisplay">
+                        <div style="color: #f87171;">[Log] Hệ thống KHÔNG khóa tài khoản, có thể brute-force vô hạn</div>
+                    </div>
+                </div>
+            `;
+            
+            const loginBtn = document.getElementById('loginBtn');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const statusDiv = document.getElementById('statusMsg');
+            
+            const doLogin = () => {
+                const uname = usernameInput.value.trim();
+                const pwd = passwordInput.value;
+                const success = performLogin(uname, pwd);
+                if (!success) {
+                    // performLogin đã gọi renderUI() → form bị vẽ lại, cần set lại status
+                    const newStatus = document.getElementById('statusMsg');
+                    if (newStatus) {
+                        newStatus.innerHTML = '❌ Sai tài khoản hoặc mật khẩu. Bạn có thể thử lại KHÔNG GIỚI HẠN lần!';
+                        newStatus.className = 'status error-msg';
+                    }
+                }
+            };
+            
+            loginBtn.addEventListener('click', doLogin);
+            usernameInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') doLogin(); });
+            passwordInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') doLogin(); });
+            updateLogDisplay();
+        }
+    }
+
+    // Khởi tạo - load users từ file trước rồi render
+    loadUsers();
+
+    // Không có session timeout check
+</script>
+</body>
+</html>
