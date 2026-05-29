@@ -7,7 +7,9 @@ Nhóm cam kết:
 5. Không sử dụng secret/API key/token thật.
 6. Không phát tán mã độc, ransomware, webshell hoặc script gây hại.
 7. Chỉ sử dụng kiến thức trong phạm vi học tập, nghiên cứu và phòng thủ.
+   
 Tên nhóm: Nhóm 9
+
 Thành viên: 
 - Đặng Quang Tiến
 - Vũ Khánh Hùng
